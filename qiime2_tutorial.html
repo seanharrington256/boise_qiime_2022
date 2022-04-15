@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Sean Harrington, Josh Harrison, &amp; Félix Brédoire" />
+  <meta name="dcterms.date" content="2022-04-30" />
+  <title>Analysis of metabarcoding data with QIIME2</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="data:text/css,body%20%7B%0Afont%2Dfamily%3A%20%22Avenir%20Next%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Apadding%3A1em%3B%0Amargin%3Aauto%3B%0Amax%2Dwidth%3A50em%3B%0Abackground%3A%23fefefe%3B%0A%7D%0Ah1%2C%20h2%2C%20h3%2C%20h4%2C%20h5%2C%20h6%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Ah1%20%7B%0Acolor%3A%20%23000000%3B%0Afont%2Dsize%3A%2028pt%3B%0A%7D%0Ah1%2Esubtitle%20%7B%0Acolor%3A%20%23000000%3B%0Afont%2Dsize%3A%2024pt%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23CCCCCC%3B%0Acolor%3A%20%23000000%3B%0Afont%2Dsize%3A%2024px%3B%0A%7D%0Ah3%20%7B%0Afont%2Dsize%3A%2018px%3B%0A%7D%0Ah4%20%7B%0Afont%2Dsize%3A%2016px%3B%0A%7D%0Ah5%20%7B%0Afont%2Dsize%3A%2014px%3B%0A%7D%0Ah6%20%7B%0Acolor%3A%20%23777777%3B%0Abackground%2Dcolor%3A%20inherit%3B%0Afont%2Dsize%3A%2014px%3B%0A%7D%0Ahr%20%7B%0Aheight%3A%200%2E2em%3B%0Aborder%3A%200%3B%0Acolor%3A%20%23CCCCCC%3B%0Abackground%2Dcolor%3A%20%23CCCCCC%3B%0A%7D%0Ap%2C%20blockquote%2C%20ul%2C%20ol%2C%20dl%2C%20li%2C%20table%2C%20pre%20%7B%0Amargin%3A%2015px%200%3B%0A%7D%0Aa%2C%20a%3Avisited%20%7B%0Acolor%3A%20%234183C4%3B%0Abackground%2Dcolor%3A%20inherit%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0A%23message%20%7B%0Aborder%2Dradius%3A%206px%3B%0Aborder%3A%201px%20solid%20%23ccc%3B%0Adisplay%3Ablock%3B%0Awidth%3A100%25%3B%0Aheight%3A60px%3B%0Amargin%3A6px%200px%3B%0A%7D%0Abutton%2C%20%23ws%20%7B%0Afont%2Dsize%3A%2010pt%3B%0Apadding%3A%204px%206px%3B%0Aborder%2Dradius%3A%205px%3B%0Aborder%3A%201px%20solid%20%23bbb%3B%0Abackground%2Dcolor%3A%20%23eee%3B%0A%7D%0Acode%2C%20pre%2C%20%23ws%2C%20%23message%20%7B%0Afont%2Dfamily%3A%20courier%3B%0Afont%2Dsize%3A%2010pt%3B%0Aborder%2Dradius%3A%205px%3B%0Aborder%2Dstyle%3A%20dashed%3B%0Abackground%2Dcolor%3A%20%23FCF8F7%3B%0Acolor%3A%20inherit%3B%0Apadding%2Dtop%3A%205px%3B%0Apadding%2Dbottom%3A%205px%3B%0A%7D%0Acode%20%7B%0Aborder%3A%201px%20dashed%20%23EAEAEA%3B%0Amargin%3A%200%202px%3B%0Apadding%3A%200%205px%3B%0Apadding%2Dtop%3A%205px%3B%0Apadding%2Dbottom%3A%205px%3B%0A%7D%0Apre%20%7B%0Aborder%2Dtop%3A%201%2E5px%20dashed%20%23CCCCCC%3B%0Aborder%2Dbottom%3A%201%2E5px%20dashed%20%23CCCCCC%3B%0Aborder%2Dleft%3A%200%3B%0Aborder%2Dright%3A%200%3B%0Aoverflow%3A%20auto%3B%0Apadding%3A%208px%2016px%3B%0A%7D%0Apre%20%3E%20code%20%7B%0Aborder%3A%200%3B%0Amargin%3A%200%3B%0Apadding%3A%200%3B%0A%7D%0A%23ws%20%7B%20background%2Dcolor%3A%20%23f8f8f8%3B%20%7D%0A%2Esend%20%7B%20color%3A%2377bb77%3B%20%7D%0A%2Eserver%20%7B%20color%3A%237799bb%3B%20%7D%0A%2Eerror%20%7B%20color%3A%23AA0000%3B%20%7D%0A" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Analysis of metabarcoding data with QIIME2</h1>
+<p class="author">Sean Harrington, Josh Harrison, &amp; Félix Brédoire</p>
+<p class="date">April 30, 2022</p>
+</header>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#introduction">1. Introduction</a></li>
+<li><a href="#installation-and-setup">2. Installation and setup</a></li>
+<li><a href="#read-and-process-the-data">3. Read and process the data</a></li>
+<li><a href="#phylogenetic-diversity-analyses">4. Phylogenetic diversity analyses</a></li>
+</ul>
+<p><br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br></p>
+<h2 id="introduction">1. Introduction</h2>
+<p>Qiime2 is a program for metabarcoding analysis. SOME MORE STUFF HERE!!!</p>
+<p>This tutorial is adapted from the following tutorials in the QIIME2 documentation: <a href="https://docs.qiime2.org/2022.2/tutorials/atacama-soils/">“Atacama soil microbiome” tutorial</a>, <a href="https://docs.qiime2.org/2022.2/tutorials/moving-pictures/">“Moving Pictures” tutorial</a>.</p>
+<p>describe the dataset, etc.</p>
+<p><br><br><br></p>
+<h2 id="installation-and-setup">2. Installation and setup</h2>
+<p>The QIIME2 software is built from a lot of different pieces and dependencies, and so installation is done using conda or virtual machines. I find conda installation to be the easiest (both here and for many other programs). conda allows users to create separate environments that programs are installed into, which allows users to have multiple versions of the same program all installed on the same machine, each within a different conda environment. This can be very useful with QIIME because some versions of QIIME have different features. Full details of QIIME2 installation options can be found <a href="https://docs.qiime2.org/2022.2/install/">here</a>, but we’ll stick with conda:</p>
+<p>If you do not already have a conda install on your system, install miniconda following the instructions <a href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">here</a>.</p>
+<p>Then run the following to download the conda environment file and install QIIME from file into that environment at the same time. Note that most conda installs of other programs can be done from a remote source without first downloading a file.</p>
+<pre><code>conda install wget
+wget https://data.qiime2.org/distro/core/qiime2-2022.2-py38-osx-conda.yml
+conda env create -n qiime2-2022.2 --file qiime2-2022.2-py38-osx-conda.yml
+rm qiime2-2022.2-py38-osx-conda.yml</code></pre>
+<p>To use QIIME now or at any point in the future, you will need to activate the <code>qiime2-2022.2</code> environment. If the environment is not active, your system will not know where to look for the QIIME2 software.</p>
+<p>Activate the environment and test the install:</p>
+<pre><code>conda activate qiime2-2022.2
+qiime --help</code></pre>
+<p>This should spit out the help menu for QIIME if everything worked as expected.</p>
+<p>You can deactivate the environment by running <code>conda deactivate</code> – if you run it now, you will need to activate it again, though.</p>
+<p>You can always check what conda environments you have and which you are currently in by running <code>conda env list</code>. The active environemnt will have <code>*</code> next to it.</p>
+<p>Now that we have QIIME installed, let’s download the data that we’ll be working with. Create a new directory, move into that directory, and then download the data there. We’ll work from within this directory for the duration of our QIIME analyses.</p>
+<pre><code>mkdir qiime2-atacama-tutorial
+cd qiime2-atacama-tutorial
+
+conda install wget
+wget \
+  -O &quot;sample-metadata.tsv&quot; \
+  &quot;https://data.qiime2.org/2022.2/tutorials/atacama-soils/sample_metadata.tsv&quot;
+  
+mkdir emp-paired-end-sequences
+wget \
+  -O &quot;emp-paired-end-sequences/forward.fastq.gz&quot; \
+  &quot;https://data.qiime2.org/2022.2/tutorials/atacama-soils/10p/forward.fastq.gz&quot;
+wget \
+  -O &quot;emp-paired-end-sequences/reverse.fastq.gz&quot; \
+  &quot;https://data.qiime2.org/2022.2/tutorials/atacama-soils/10p/reverse.fastq.gz&quot;
+wget \
+  -O &quot;emp-paired-end-sequences/barcodes.fastq.gz&quot; \
+  &quot;https://data.qiime2.org/2022.2/tutorials/atacama-soils/10p/barcodes.fastq.gz&quot;
+  </code></pre>
+<p>Note that the slashes are just escaping line endings so that <code>wget</code> commands are interpreted as a single-line commands while allowing them to easily fit on this page.</p>
+<p>We should now have the sample metadata, raw reads, and barcodes for the samples.</p>
+<p>Take a look at the sample metadata in the <code>sample_metadata.tsv</code> file to get familiar with what we’re working with here. We have a mixture of categorical variables, such as site-name, and continuous variables, such as elevation.</p>
+<h2 id="read-and-process-the-data">3. Read and process the data</h2>
+<p class="heading" id="section"></p>
+<p class="heading" id="i-need-to-add-in-more-stuff-about-each-of-these-steps-below">I need to add in more stuff about each of these steps below</p>
+<p class="heading" id="qza-vs-qzv-files---qiime-tools-view-for-qzv-files">qza vs qzv files - qiime tools view for qzv files</p>
+<p>Now we can import the data and prepare it for analysis in Qiime.</p>
+<pre><code>qiime tools import \
+   --type EMPPairedEndSequences \
+   --input-path emp-paired-end-sequences \
+   --output-path emp-paired-end-sequences.qza</code></pre>
+<p>This creates a QIIME artifact with the sequences.</p>
+<p>We now need to demultiplex the sequences, which sorts the reads into samples based on barcodes added in the library preparation.</p>
+<pre><code>qiime demux emp-paired \
+  --m-barcodes-file sample-metadata.tsv \
+  --m-barcodes-column barcode-sequence \
+  --p-rev-comp-mapping-barcodes \
+  --i-seqs emp-paired-end-sequences.qza \
+  --o-per-sample-sequences demux-full.qza \
+  --o-error-correction-details demux-details.qza</code></pre>
+<p>To make things run faster, we’ll subsample only 30% of the reads. <em>This is not a general step for most pipelines</em>. You will typically want to use all of your data unless you have some specific reason for subsampling.</p>
+<pre><code>qiime demux subsample-paired \
+  --i-sequences demux-full.qza \
+  --p-fraction 0.3 \
+  --o-subsampled-sequences demux-subsample.qza
+
+qiime demux summarize \
+  --i-data demux-subsample.qza \
+  --o-visualization demux-subsample.qzv</code></pre>
+<h4 id="bring-the-qvz-into-qiime-view">Bring the qvz into qiime view</h4>
+<p>We have a lot of samples that have fewer than 100 reads in them. This isn’t really enough reads for meaningful analysis, so let’s filter these out. You do not necessarily need to run through this step in other analyses. Think carefully about what thresholds you may want to use when filtering out any data.</p>
+<pre><code>qiime tools export \
+  --input-path demux-subsample.qzv \
+  --output-path ./demux-subsample/
+
+qiime demux filter-samples \
+  --i-demux demux-subsample.qza \
+  --m-metadata-file ./demux-subsample/per-sample-fastq-counts.tsv \
+  --p-where &#39;CAST([forward sequence count] AS INT) &gt; 100&#39; \
+  --o-filtered-demux demux.qza</code></pre>
+<p>Denoising the data: - add more stuff here, error correction - note there are other options</p>
+<pre><code>qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs demux.qza \
+  --p-trim-left-f 13 \
+  --p-trim-left-r 13 \
+  --p-trunc-len-f 150 \
+  --p-trunc-len-r 150 \
+  --o-table table.qza \
+  --o-representative-sequences rep-seqs.qza \
+  --o-denoising-stats denoising-stats.qza</code></pre>
+<p>Generate summaries of the output stats from that:</p>
+<pre><code>qiime feature-table summarize \
+  --i-table table.qza \
+  --o-visualization table.qzv \
+  --m-sample-metadata-file sample-metadata.tsv
+
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs.qza \
+  --o-visualization rep-seqs.qzv
+
+qiime metadata tabulate \
+  --m-input-file denoising-stats.qza \
+  --o-visualization denoising-stats.qzv</code></pre>
+<h2 id="phylogenetic-diversity-analyses">4. Phylogenetic diversity analyses</h2>
+<p>We need to start by making a tree:</p>
+<pre><code>qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs.qza \
+  --o-alignment aligned-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --o-tree unrooted-tree.qza \
+  --o-rooted-tree rooted-tree.qza</code></pre>
+<p>Next, we can use that to calculate some diversity metrics. We have to specify a minimum sampling depth (<code>--p-sampling-depth</code>). This threshold is important: any samples with more than the specified depth will be randomly sampled to contain only that many features, whereas samples with fewer features will be discarded from analysis. This is necessary because using different numbers of features across samples can bias estimates of diversity. There is no easy rule for selecting this threshold, other than that we want to try to select a threshold that maximizes the number of features without dropping out too many samples. Let’s look at the <em>Interactive Sample Detail</em> section of <code>table.qzv</code> to help us figure out what threshold to use.</p>
+<pre><code>qiime tools view table.qzv</code></pre>
+<p>In this document, click on the <em>Interactive Sample Detail</em> tab up top. As you move the <em>Sampling Depth</em> slider around you can see a visual representation of how many samples will be retained. You can also scroll down the table to see if there is a point at which there is a sharp decline in the Feature Counts, the value just prior to such a drop off can be good to use.</p>
+<p>What do you think is a reasonable value to use?</p>
+<pre><code>qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny rooted-tree.qza \
+  --i-table table.qza \
+  --p-sampling-depth 733 \
+  --m-metadata-file sample-metadata.tsv \
+  --output-dir core-metrics-results</code></pre>
+<p>This generates a lot of output that is worth looking through.</p>
+<pre><code>qiime tools view core-metrics-results/bray_curtis_emperor.qzv</code></pre>
+<p>For continuous variables, try selecting a color scheme from the sequential or diverging sets of colors, these should make it easier to identify trends.</p>
+<p>Which variables seem to be most strongly associated with beta diversity?</p>
+<h3 id="categorical-tests">4.1 Categorical tests</h3>
+<p>Now that we have computed the diversity metrics and done some qualitative exploration of the emperor plots, we can test for associations between these diversity metrics and the sample metadata. We can test for differences among categorical groups (e.g., using the <code>vegetation</code> column, which is yes/no) or correlations with continuous variables, such as <code>percentcover</code>.</p>
+<p>Let’s start with a categorical test with the evenness and Faith Phylogenetic Diversity metrics.</p>
+<pre><code>qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/evenness_vector.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --o-visualization core-metrics-results/evenness-group-significance.qzv
+  
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --o-visualization core-metrics-results/faith-pd-group-significance.qzv  </code></pre>
+<p>Take a look at these results:</p>
+<pre><code>qiime tools view core-metrics-results/evenness-group-significance.qzv
+
+qiime tools view core-metrics-results/faith-pd-group-significance.qzv</code></pre>
+<p>What associations are statistically significant?</p>
+<h3 id="i-need-to-put-in-more-interpretation-here">I need to put in more interpretation here</h3>
+<p>Now let’s look at how beta diversity composition varies across categorical variables using PERMANOVA. This tests if distances between samples within a group are more similar to each other than to samples from other groups. Because it uses permutation to assess significance, this command can be slow, and so we will only run it on the vegetation column of our metadata right now. The addition of the <code>--p-pairwise</code> option will perform pairwise tests to determine which groups are significantly different from each other–note that this is redundant here because we only have two groups for vegetation.</p>
+<pre><code>qiime diversity beta-group-significance \
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-column vegetation \
+  --o-visualization core-metrics-results/unweighted-unifrac-vegetation-significance.qzv \
+  --p-pairwise</code></pre>
+<p>Take a look:</p>
+<pre><code>qiime tools view core-metrics-results/unweighted-unifrac-vegetation-significance.qzv</code></pre>
+<p>Are there any other categorical comparisons that are worth making?</p>
+<h3 id="continuous-tests">4.2 Continuous tests</h3>
+<p>We can also make correlations between diversity and continuous variables from the metadata. As above, we’ll start with alpha diversity:</p>
+<pre><code>qiime diversity alpha-correlation \
+    --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
+    --m-metadata-file sample-metadata.tsv \
+    --p-method spearman \
+    --o-visualization core-metrics-results/faith-pd-correlation.qzv  </code></pre>
+<p>View it:</p>
+<pre><code>qiime tools view core-metrics-results/faith-pd-correlation.qzv</code></pre>
+<p>What relationships are significant? Note that we can also run this correlation using evenness or with a Pearson correlation test instead of Spearman.</p>
+<p>Let’s now look for significant correlations using beta diversity.</p>
+<p>To do this, we need to first calculate a distance matrix from the column of interest from the metadata. Here we’ll use just elevation, but you are free to explore other variables as well.</p>
+<pre><code>qiime metadata distance-matrix \
+    --m-metadata-file sample-metadata.tsv \
+    --m-metadata-column elevation \
+    --o-distance-matrix core-metrics-results/elevation-dist-mat.qza</code></pre>
+<p>Then we can use a Mantel test to test for an association between this distance matrix and one of our metrics of beta diversity. We’ll use just unweighted unifrac distance, but we can do this with any.</p>
+<pre><code>qiime diversity mantel \
+    --i-dm1 core-metrics-results/elevation-dist-mat.qza \
+    --i-dm2 core-metrics-results/unweighted_unifrac_distance_matrix.qza \
+    --p-method spearman \
+    --p-label1 elevation \
+    --p-label2 unweighted_unifrac \
+    --p-intersect-ids \
+    --o-visualization core-metrics-results/unweight_unifrac_elevation_mantel.qzv</code></pre>
+<p>View the resulting visualization:</p>
+<pre><code>qiime tools view core-metrics-results/unweight_unifrac_elevation_mantel.qzv</code></pre>
+<p>look into the <code>qiime diversity bioenv</code> - don’t know what that does</p>
+<h3 id="alpha-rarefaction">4.3 Alpha rarefaction</h3>
+<p><strong>Stuff to look up later</strong></p>
+<p>Figure out why intersect IDs is necessary:</p>
+<pre><code>Plugin error from diversity:
+
+  The following ID(s) are not contained in both distance matrices. This sometimes       occurs when mismatched files are passed. If this is not the case, you can use `intersect_ids` to discard these mismatches and apply the Mantel test to only those IDs that are found in both distance matrices.
+
+  BAQ1370.1.2, BAQ1370.1.3, BAQ1370.3, BAQ1552.1.1, BAQ1552.2, BAQ2838.1, BAQ2838.2, BAQ2838.3, BAQ895.2, BAQ895.3, YUN1005.1.3, YUN1005.2, YUN1242.2, YUN1609.3, YUN2029.1, YUN2029.3, YUN3008.1.1, YUN3008.1.2, YUN3008.1.3, YUN3008.2, YUN3008.3, YUN3153.1, YUN3184.1, YUN3184.2, YUN3259.1.1, YUN3259.1.3, YUN3346.2</code></pre>
+</body>
+</html>
