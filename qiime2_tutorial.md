@@ -12,6 +12,9 @@ date: April 30, 2022
 - [2. Installation and setup](#installation-and-setup)
 - [3. Read and process the data](#read-and-process-the-data)
 - [4. Phylogenetic diversity analyses](#phylogenetic-diversity-analyses)
+- [5. Taxonomic analysis](#taxonomic-analysis)
+- [6. Differential abundance testing with ANCOM](#differential-abundance-testing-with-ancom)
+
 
 
 <br><br><br><br><br><br>
@@ -149,6 +152,10 @@ qiime demux summarize \
 ```
 
 #### Bring the qvz into qiime view
+
+
+
+GO OVER what plugins are and the fact that a lot of this wraps other pieces of software (https://docs.qiime2.org/2022.2/citation/)
 
 We have a lot of samples that have fewer than 100 reads in them. This isn't really enough reads for meaningful analysis, so let's filter these out. You do not necessarily need to run through this step in other analyses. Think carefully about what thresholds you may want to use when filtering out any data.
 
@@ -357,11 +364,235 @@ look into the `qiime diversity bioenv` - don't know what that does
 
 ### 4.3 Alpha rarefaction
 
+Alpha rarefaction plotting will compute alpha diversity at multiple sampling depths and then visualize how increased sampling affects estimates of alpha diversity. 
 
 
+
+```
+qiime diversity alpha-rarefaction \
+  --i-table table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-max-depth 1175 \
+  --m-metadata-file sample-metadata.tsv \
+  --o-visualization alpha-rarefaction.qzv
+```
+
+
+The parameter `--p-max-depth` should be chosen from the information in `table.qzv` that we generated previously. Using roughly the median frequency is generally recommended, but you may want to increase the value if your rarefaction plot does not level out or decrease it if you are losing many of your samples at this depth. We've chosen the median above, let's see how it looks:
+
+
+```
+qiime tools view alpha-rarefaction.qzv
+```
+
+
+The top plot shows us how much diversity we detect at varying sequencing depths. If the plot has leveled off, we can be reasonably confident that we are accurately characterizing the diversity in our samples. If the plots do not level off, that suggests that further sequencing may be needed to detect additional features in the samples and accurately characterize diversity.
+
+How does this plot look to you? Do you think that the sequencing depth is adequate?
+
+The bottom plot shows the number of samples that remain in each category when grouping by metadata columns. This is important to look at because if the diversity metric in the top plot is calculated from very few samples at a given sampling depth, that estimate of diversity may be unreliable.
+
+
+
+## 5. Taxonomic analysis
+
+
+Next up, we'll start to explore the taxonomic composition of our samples. We will start by training a taxonomic classifier. There are several existing, pre-trained classifiers that exist for QIIME, but the developers recommend training your own classifier, as they perform best when trained on your specific data.
+
+We'll follow the documentation [here](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/) to train our classifier. As stated in that documentation, we'll use the Greengenes 13_8 85% OTU data set -- **note that is not recommended for real data** -- we are using it here for the sake of time efficiency.
+
+
+Start by creating a new directory, moving into it, and then downloading the data that we will use to train the classifier.
+
+```
+mkdir training-feature-classifiers
+cd training-feature-classifiers
+wget \
+  -O "85_otus.fasta" \
+  "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otus.fasta"
+
+wget \
+  -O "85_otu_taxonomy.txt" \  "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otu_taxonomy.txt"
+```
+
+If that all ran successfully, you should now have three files in your current directory, a fasta, txt, and qza file.
+
+
+Then we need to import these data as QIIME artifact files.
+
+```
+qiime tools import \
+  --type 'FeatureData[Sequence]' \
+  --input-path 85_otus.fasta \
+  --output-path 85_otus.qza
+
+qiime tools import \
+  --type 'FeatureData[Taxonomy]' \
+  --input-format HeaderlessTSVTaxonomyFormat \
+  --input-path 85_otu_taxonomy.txt \
+  --output-path ref-taxonomy.qza
+```
+
+
+PUT IN MORE DETAIL HERE ABOUT THE CLASSIFIER:
+
+Next up, we'll extract the reads from the reference sequences to match our data:
+
+
+```
+qiime feature-classifier extract-reads \
+  --i-sequences 85_otus.qza \
+  --p-f-primer GTGCCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACHVGGGTWTCTAAT \
+  --p-min-length 100 \
+  --p-max-length 400 \
+  --o-reads ref-seqs.qza
+```
+
+
+Then we can run the Naive Bayes classifier.
+
+```
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads ref-seqs.qza \
+  --i-reference-taxonomy ref-taxonomy.qza \
+  --o-classifier classifier.qza
+```
+
+Now we can run the classifier on our data and then generate a visualization.
+
+
+```
+cd ..  # We first need to move up one level to get out of the classifier directory
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier training-feature-classifiers/classifier.qza \
+  --i-reads rep-seqs.qza \
+  --o-classification taxonomy.qza
+
+qiime metadata tabulate \
+  --m-input-file taxonomy.qza \
+  --o-visualization taxonomy.qzv
+```
+
+
+Let's take a look.
+
+
+```
+qiime tools view taxonomy.qzv
+```
+
+This isn't too informative or at all pretty to look at, so let's make some bar plots:
+
+```
+qiime taxa barplot \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --o-visualization taxa-bar-plots.qzv
+
+
+qiime tools view taxa-bar-plots.qzv
+```
+
+
+Set the `Taxonomic level` to *Level 2* and then `Sort Samples By` *vegetation*. Are there any noticeable differences in the phyla that are represented by samples from each of the vegetation categories?
+
+
+
+## 6. Differential abundance testing with ANCOM
+
+We can also perform explicit tests for features that are differentially abundant across sample groups using [ANCOM](https://pubmed.ncbi.nlm.nih.gov/26028277/). 
+
+
+To do this, we need to use `add-pseudocount` to generate a `FeatureTable[Composition]` QIIME artifact. This is necessary because ANCOM cannot handle frequencies of zero, and so these values must be imputed prior to analysis with ANCOM.
+
+```
+qiime composition add-pseudocount \
+  --i-table table.qza \
+  --o-composition-table comp-table.qza
+```
+
+Then we'll run ANCOM on the `vegetation` column to see if we have any significant differential abundance across vegetation categories.
+
+```
+qiime composition ancom \
+  --i-table comp-table.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-column vegetation \
+  --o-visualization ancom-vegetation.qzv
+```
+
+Visualize this:
+
+```
+qiime tools view ancom-vegetation.qzv
+```
+
+NEED a lot more interpretation here 
+
+We can also run this at the genus level by collapsing down the taxonomy THIS explanation sucks
+
+
+``` 
+qiime taxa collapse \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-level 6 \
+  --o-collapsed-table table-l6.qza
+
+qiime composition add-pseudocount \
+  --i-table table-l6.qza \
+  --o-composition-table comp-table-l6.qza
+
+qiime composition ancom \
+  --i-table comp-table-l6.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-column vegetation \
+  --o-visualization l6-ancom-vegetation.qzv
+```
+
+Take a look.
+
+
+```
+qiime tools view l6-ancom-vegetation.qzv
+```
+
+
+We can also do the same for phyla:
+
+``` 
+qiime taxa collapse \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-level 2 \
+  --o-collapsed-table table-l2.qza
+
+qiime composition add-pseudocount \
+  --i-table table-l2.qza \
+  --o-composition-table comp-table-l2.qza
+
+qiime composition ancom \
+  --i-table comp-table-l2.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-column vegetation \
+  --o-visualization l2-ancom-vegetation.qzv
+  
+  
+  
+qiime tools view l2-ancom-vegetation.qzv
+```
+
+
+What phyla differ among the vegetated and non-vegetated sites.
 
 
 **Stuff to look up later**
+
+
+May want to add in Gneiss - at least reference it
 
 
 Figure out why intersect IDs is necessary:
