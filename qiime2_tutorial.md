@@ -146,6 +146,7 @@ qiime tools import \
 
 This creates a QIIME2 file called an artifact. QIIME2 uses two file formats, "QIIME zipped artifacts" or ".qza" files and "QIIME zipped visualizations" or ".qzv" files. Both are just zip files with different names. qza files contain data and provenance (information about what has been done to the data) while qzv files, which we'll see shortly, contain visualizations, as the name suggests.
 
+<br><br>
 
 ### 3.1 Demultiplexing
 
@@ -219,6 +220,7 @@ qiime demux filter-samples \
   --o-filtered-demux demux.qza
 ```
 
+<br><br>
 
 ### 3.2 Denoising
 
@@ -330,6 +332,7 @@ For continuous variables, try selecting a color scheme from the sequential or di
 
 Are there any particular variables that seem to be strongly associated with beta diversity?
 
+<br><br>
 
 ### 4.1 Categorical tests
 
@@ -388,6 +391,7 @@ qiime tools view core-metrics-results/unweighted-unifrac-vegetation-significance
 
 Are there any other categorical comparisons that are worth making?
 
+<br><br>
 
 ### 4.2 Continuous tests
 
@@ -450,6 +454,7 @@ You'll see a warning that 27 IDs weren't shared between your distance matrices. 
 
 We could alternately use the `qiime diversity bioenv` method in a similar way to test for relationships between continuous variables and beta diversity metrics, but we won't explore it here. You can run `qiime diversity mantel --help` for more info on this. 
 
+<br><br>
 
 ### 4.3 Alpha rarefaction
 
@@ -691,13 +696,4 @@ What phyla differ among the vegetated and non-vegetated sites.
 
 
 May want to add in Gneiss - at least reference it
-
-
-Figure out why intersect IDs is necessary:
-
-	Plugin error from diversity:
-
-	  The following ID(s) are not contained in both distance matrices. This sometimes 		occurs when mismatched files are passed. If this is not the case, you can use `intersect_ids` to discard these mismatches and apply the Mantel test to only those IDs that are found in both distance matrices.
-
-	  BAQ1370.1.2, BAQ1370.1.3, BAQ1370.3, BAQ1552.1.1, BAQ1552.2, BAQ2838.1, BAQ2838.2, BAQ2838.3, BAQ895.2, BAQ895.3, YUN1005.1.3, YUN1005.2, YUN1242.2, YUN1609.3, YUN2029.1, YUN2029.3, YUN3008.1.1, YUN3008.1.2, YUN3008.1.3, YUN3008.2, YUN3008.3, YUN3153.1, YUN3184.1, YUN3184.2, YUN3259.1.1, YUN3259.1.3, YUN3346.2
 
