@@ -11,22 +11,22 @@ date: April 30, 2022
 - [1. Introduction](#introduction)
 - [2. Installation and setup](#installation-and-setup)
 - [3. Read and process the data](#read-and-process-the-data)
+	- [3.1 Demultiplexing](#demultiplexing)
+	- [3.2 Denoising](#denoising)
 - [4. Phylogenetic diversity analyses](#phylogenetic-diversity-analyses)
 - [5. Taxonomic analysis](#taxonomic-analysis)
 - [6. Differential abundance testing with ANCOM](#differential-abundance-testing-with-ancom)
 
 
 
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
 
+
+<br><br><br><br><br><br>
+<br><br><br><br><br><br>
+<center>
+<img src="qiime2.svg" width=550 />
+</center>
+<br><br><br>
 
 ## 1. Introduction
 
@@ -37,7 +37,7 @@ The greatest advantage of QIIME2 is that it aggregates various tools into a sing
 Another advantage of QIIME2 is that the files track the provenance of the data--i.e., QIIME2 tracks exactly how the data has been processed at every step up to any given analysis. We will explore this further as we start looking at QIIME2 files.
 
 
-Note that hroughout this tutorial, I may simply refer to QIIME2 as QIIME, but in all cases, we are referring to QIIME2
+Note that throughout this tutorial, I may simply refer to QIIME2 as QIIME, but in all cases, we are referring to QIIME2
 
 
 Today, we will use QIIME2 to explore soil microbiome data from the Atacama desert in Chile. The data are presented in [this paper](https://journals.asm.org/doi/full/10.1128/mSystems.00195-16).
@@ -59,12 +59,15 @@ The `#` denotes a comment in the bash language, and anything following that will
 
 ## 2. Installation and setup
 
-The QIIME2 software is built from a lot of different pieces and dependencies, and so installation is done using conda or virtual machines. I find conda installation to be the easiest (both here and for many other programs). conda allows users to create separate environments that programs are installed into, which allows users to have multiple versions of the same program all installed on the same machine, each within a different conda environment. This can be very useful with QIIME because some versions of QIIME have different features. Full details of QIIME2 installation options can be found [here](https://docs.qiime2.org/2022.2/install/), but we'll stick with conda:
+As discussed above, QIIME2 is not a single program, but a pipeline that incorporates multiple other programs. This means that installation of QIIME2 is not a trivial endeavor because it has a whole slew of dependencies and components. Fortunately, these have all been combined into easily installed conda environments and virtual machines.
+
+I find conda installation to be the easiest (both here and for many other programs). conda allows users to create separate environments that programs are installed into, which allows users to have multiple versions of the same program all installed on the same machine, each within a different conda environment. This can be very useful with QIIME2 because some versions of QIIME2 have different features or support different plugins. Full details of QIIME2 installation options can be found [here](https://docs.qiime2.org/2022.2/install/), but we'll stick with conda:
 
 If you do not already have a conda install on your system, install miniconda following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 
 Then run the following to download the conda environment file and install QIIME from file into that environment at the same time. Note that most conda installs of other programs can be done from a remote source without first downloading a file.
+
 
 ```
 conda install wget
@@ -73,7 +76,7 @@ conda env create -n qiime2-2022.2 --file qiime2-2022.2-py38-osx-conda.yml
 rm qiime2-2022.2-py38-osx-conda.yml
 ```
 
-To use QIIME now or at any point in the future, you will need to activate the `qiime2-2022.2` environment. If the environment is not active, your system will not know where to look for the QIIME2 software. 
+To use QIIME2 now or at any point in the future, you will need to activate the `qiime2-2022.2` environment. If the environment is not active, your system will not know where to look for the QIIME2 software. 
 
 Activate the environment and test the install:
 
@@ -82,12 +85,12 @@ conda activate qiime2-2022.2
 qiime --help
 ```
 
-This should spit out the help menu for QIIME if everything worked as expected.
+This should spit out the help menu for QIIME2 if everything worked as expected.
 
 
 You can deactivate the environment by running `conda deactivate` -- if you run it now, you will need to activate it again, though.
 
-You can always check what conda environments you have and which you are currently in by running `conda env list`. The active environemnt will have `*` next to it.
+You can always check what conda environments you have and which you are currently in by running `conda env list`. The active environment will have `*` next to it.
 
 
 
@@ -122,15 +125,12 @@ We should now have the sample metadata, raw reads, and barcodes for the samples.
 Take a look at the sample metadata in the `sample_metadata.tsv` file to get familiar with what we're working with here. We have a mixture of categorical variables, such as site-name, and continuous variables, such as elevation.
 
 
+<br><br><br>
 
 
 ## 3. Read and process the data
 
-###########
-########### I need to add in more stuff about each of these steps below
-###########     qza vs qzv files - qiime tools view for qzv files
-
-Now we can import the data and prepare it for analysis in Qiime. 
+Now we can import the data and prepare it for analysis in QIIME2. As touched on above, QIIME2 puts things into its own file format, and so the first step is to read the raw data into QIIME2 format.
 
 
 ```
@@ -140,7 +140,11 @@ qiime tools import \
    --output-path emp-paired-end-sequences.qza
 ```
 
-This creates a QIIME artifact with the sequences. 
+
+This creates a QIIME2 file called an artifact. QIIME2 uses two file formats, "QIIME zipped artifacts" or ".qza" files and "QIIME zipped visualizations" or ".qzv" files. Both are just zip files with different names. qza files contain data and provenance (information about what has been done to the data) while qzv files, which we'll see shortly, contain visualizations, as the name suggests.
+
+
+### 3.1 Demultiplexing
 
 We now need to demultiplex the sequences, which sorts the reads into samples based on barcodes added in the library preparation.
 
@@ -155,7 +159,10 @@ qiime demux emp-paired \
 ```
 
 
-To make things run faster, we'll subsample only 30% of the reads. *This is not a general step for most pipelines*. You will typically want to use all of your data unless you have some specific reason for subsampling.
+Note that most options to QIIME2 commands share a general structure. They all start `qiime`, followed by the plugin being used (`demux` here), then the specific method being applied (here `emp-paired` to demultiplex paired-end data generated with the EMP protocol), followed by arguments. Arguments starting `--i` designate input, arguments starting `--o` designate output, arguments starting `--m` designate metadata, and arguments starting `--p` (we'll see these in a second) designate parameters being fed to the method being used. You can get help for plugins or methods by typing `--help`, e.g., `qiime demux --help` or `qiime demux emp-paired --help`.
+
+
+To make things run faster, we'll subsample only 30% of the reads. **This is not a general step for most pipelines**. You will typically want to use all of your data unless you have a specific reason for subsampling.
 
 ```
 qiime demux subsample-paired \
@@ -168,13 +175,34 @@ qiime demux summarize \
   --o-visualization demux-subsample.qzv
 ```
 
-#### Bring the qvz into qiime view
+
+Before we go any further, let's do a quick exploration of a .qza file. We can use [https://view.qiime2.org/](https://view.qiime2.org/) to examine these. Bring the `demux-subsample.qza` file into that website. It will start in the details tab, where you can see information about the format as well as citations. You can see that even just for demultiplexing, there are already three citations. These should all go into your methods section, along with a detailed description of the specific commands, plugins, and arguments that you used to run your analyses and process your data: "we demultiplexed the data using QIIME2" is not adequate for anyone to reproduce your results. The QIIME2 documentation has excellent examples of good and bad description of QIIME2 methods sections [here](https://docs.qiime2.org/2022.2/citation/).
+
+You can also click on the "provenance" tab to see what manipulations have been done to your data. You should see something like this:
+
+<center>
+<img src="provenance_pic.png" width=600 />
+</center>
 
 
+This tells us important information, but isn't very interesting from a scientific perspective of trying to learn about the data and make inferences. Visualiztion (qzv) files are much more intersting for these purposes. We can use a terminal command to view visualization files:
 
-GO OVER what plugins are and the fact that a lot of this wraps other pieces of software (https://docs.qiime2.org/2022.2/citation/)
+```
+qiime tools view demux-subsample.qzv
+```
 
-We have a lot of samples that have fewer than 100 reads in them. This isn't really enough reads for meaningful analysis, so let's filter these out. You do not necessarily need to run through this step in other analyses. Think carefully about what thresholds you may want to use when filtering out any data.
+The `Overview` tab shows some general stats on how many reads we have per sample. From looking at the histograms, we see that a lot of samples have very few reads. If we scroll down to look at the table, we see that we have a lot of samples that have fewer than 100 reads in them. 
+
+<center>
+<img src="reads_hist.png" width=600 />
+</center>
+
+<center>
+<img src="low_reads_tab.png" width=550 />
+</center>
+
+
+This isn't enough reads for meaningful analysis, so we'll filter these out in the next step. You do not necessarily need to run through this step in other analyses. Think carefully about what thresholds you may want to use when filtering out any data.
 
 ```
 qiime tools export \
@@ -188,7 +216,24 @@ qiime demux filter-samples \
   --o-filtered-demux demux.qza
 ```
 
-Denoising the data: - add more stuff here, error correction - note there are other options
+
+### 3.2 Denoising
+
+Our next step is to "denoise", or error correct, the data. This is an important step in the analysis of metabarcoding data because the units of analysis are unique sequences, presumed to be from unique organisms. However, all sequencers encounter sequencing errors, which produce sequences that are slightly different from the true sequence. We will use DADA2 (via the dada2 plugin) to error correct our data--this is a complex process, and you can read more about it [here](https://www.nature.com/articles/nmeth.3869)--this is not the only option for error correction in QIIME2. This step will also include some trimming of our reads and will merge the forward and reverse reads. To determine some of our trimming paramters, let's go back to our demultiplexed visualization and look in the `Interactive Quality Plot` tab
+
+```
+qiime tools view demux-subsample.qzv
+```
+
+You should see something like this:
+
+<center>
+<img src="base_qual.png" width=600 />
+</center>
+
+
+We have 150 bp paired-end reads, and quality is reasonably high throughout, but we can see that the first ~13 bp of both forward and reverse reads is a little low, so we'll trim those out. We'll also truncate reads in both directions to 150 bp, since none should be longer than this. Note that we have set these the same for forward and reverse reads, but that is not necessary.
+
 
 ```
 qiime dada2 denoise-paired \
@@ -202,9 +247,7 @@ qiime dada2 denoise-paired \
   --o-denoising-stats denoising-stats.qza
 ```
 
-
-Generate summaries of the output stats from that:
-
+Let's generate a few summaries of this ouput:
 
 ```
 qiime feature-table summarize \
@@ -221,6 +264,13 @@ qiime metadata tabulate \
   --o-visualization denoising-stats.qzv
 ```
 
+Then use `qiime tools view` as we did above on each of these three visualizations (`table.qzv`, `rep-seqs.qzv`, `denoising-stats.qzv`) to explore them.
+
+
+
+
+
+<br><br><br>
 
 ## 4. Phylogenetic diversity analyses
 
@@ -411,6 +461,8 @@ The bottom plot shows the number of samples that remain in each category when gr
 
 
 
+<br><br><br>
+
 ## 5. Taxonomic analysis
 
 
@@ -517,6 +569,7 @@ qiime tools view taxa-bar-plots.qzv
 Set the `Taxonomic level` to *Level 2* and then `Sort Samples By` *vegetation*. Are there any noticeable differences in the phyla that are represented by samples from each of the vegetation categories?
 
 
+<br><br><br>
 
 ## 6. Differential abundance testing with ANCOM
 
