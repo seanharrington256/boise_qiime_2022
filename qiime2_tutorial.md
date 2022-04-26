@@ -14,6 +14,9 @@ date: April 30, 2022
 	- [3.1 Demultiplexing](#demultiplexing)
 	- [3.2 Denoising](#denoising)
 - [4. Phylogenetic diversity analyses](#phylogenetic-diversity-analyses)
+	- [4.1 Categorical tests](#categorical-tests)
+	- [4.2 Continuous tests](#continuous-tests)
+	- [4.3 Alpha rarefaction](#alpha-rarefaction)
 - [5. Taxonomic analysis](#taxonomic-analysis)
 - [6. Differential abundance testing with ANCOM](#differential-abundance-testing-with-ancom)
 
@@ -274,7 +277,10 @@ Then use `qiime tools view` as we did above on each of these three visualization
 
 ## 4. Phylogenetic diversity analyses
 
-We need to start by making a tree:
+
+Now that we have the data fully read in and processed, we can start to do some analysis that will tell us about the biology of our system. We're going to start with diversity analyses. This includes how many taxa we have in our samples, how distinct the taxonomic composition of different samples or metadata categories are, and related metrics.
+
+Many of these metrics include phylogenetic distance in their calculation, and to do that, we need a tree. We'll start by making one. We'll use the `phylogeny` plugin to use the [MAFFT](https://mafft.cbrc.jp/alignment/software/) program for sequence alignment, followed by phylogenetic analysis in the program [FastTree](http://www.microbesonline.org/fasttree/). As for many of the methods in QIIME2, these are external programs that are being called by the QIIME2 pipeline. There are multiple other options that you can explore using `--help`.
 
 ```
 qiime phylogeny align-to-tree-mafft-fasttree \
@@ -286,7 +292,9 @@ qiime phylogeny align-to-tree-mafft-fasttree \
 ```
 
 
-Next, we can use that to calculate some diversity metrics. We have to specify a minimum sampling depth (`--p-sampling-depth`). This threshold is important: any samples with more than the specified depth will be randomly sampled to contain only that many features, whereas samples with fewer features will be discarded from analysis. This is necessary because using different numbers of features across samples can bias estimates of diversity. There is no easy rule for selecting this threshold, other than that we want to try to select a threshold that maximizes the number of features without dropping out too many samples. Let's look at the *Interactive Sample Detail* section of `table.qzv` to help us figure out what threshold to use.
+Next, we can start to calculate some diversity metrics. We have to specify a minimum sampling depth (`--p-sampling-depth`) for these calculations. This threshold is important: any samples with more than the specified depth will be randomly sampled to contain only that many features, whereas samples with fewer features will be discarded from analysis. 
+
+This is necessary because using different numbers of features across samples can bias estimates of diversity. There is no easy rule for selecting this threshold, other than that we want to try to select a threshold that maximizes the number of features without dropping out too many samples. Let's look at the *Interactive Sample Detail* section of `table.qzv` to help us figure out what threshold to use.
 
 ```
 qiime tools view table.qzv
@@ -294,7 +302,11 @@ qiime tools view table.qzv
 
 In this document, click on the *Interactive Sample Detail*  tab up top. As you move the *Sampling Depth* slider around you can see a visual representation of how many samples will be retained. You can also scroll down the table to see if there is a point at which there is a sharp decline in the Feature Counts, the value just prior to such a drop off can be good to use.
 
-What do you think is a reasonable value to use?
+What do you think is a reasonable value to use? 
+
+When selecting this threshold, keep in mind that we also want to keep an eye on how dropping out samples affects how many samples we retain in different metadata categories. E.g., if we had 5 samples from each of two locations that we want to compare, a sampling threshold that excludes all samples from one of those sites would make comparisons impossible.
+
+Once we've selected a good sampling depth, we can calculate our diversity metrics:
 
 
 ```
@@ -306,21 +318,24 @@ qiime diversity core-metrics-phylogenetic \
   --output-dir core-metrics-results
 ```
 
-This generates a lot of output that is worth looking through. 
+This generates a lot of output that is worth looking through, take a look at all of the artifacts and visualizations that were created: `ls core-metrics-results`.
+
+For each of the beta diversity metrics, a principal coordinates analysis (PCoA) plot was generated using Emperor. Let's take a look at one of them:
 
 ```
 qiime tools view core-metrics-results/bray_curtis_emperor.qzv
 ```
+
 For continuous variables, try selecting a color scheme from the sequential or diverging sets of colors, these should make it easier to identify trends.
 
-Which variables seem to be most strongly associated with beta diversity?
+Are there any particular variables that seem to be strongly associated with beta diversity?
 
 
 ### 4.1 Categorical tests
 
-Now that we have computed the diversity metrics and done some qualitative exploration of the emperor plots, we can test for associations between these diversity metrics and the sample metadata. We can test for differences among categorical groups (e.g., using the `vegetation` column, which is yes/no) or correlations with continuous variables, such as `percentcover`. 
+Now that we have computed the diversity metrics and done some qualitative exploration of the emperor plots, we can explicitly test for associations between these diversity metrics and the sample metadata. We can test for differences among categorical groups (e.g., using the `vegetation` column, which is yes/no) or correlations with continuous variables, such as `percentcover`. 
 
-Let's start with a categorical test with the evenness and Faith Phylogenetic Diversity metrics. 
+Let's start with categorical tests using the evenness and Faith Phylogenetic Diversity metrics. 
 
 
 ```
@@ -347,7 +362,6 @@ qiime tools view core-metrics-results/faith-pd-group-significance.qzv
 What associations are statistically significant?
 
 
-### I need to put in more interpretation here
 
 Now let's look at how beta diversity composition varies across categorical variables using PERMANOVA. This tests if distances between samples within a group are more similar to each other than to samples from other groups. Because it uses permutation to assess significance, this command can be slow, and so we will only run it on the vegetation column of our metadata right now. The addition of the `--p-pairwise` option will perform pairwise tests to determine which groups are significantly different from each other--note that this is redundant here because we only have two groups for vegetation.
 
@@ -365,6 +379,11 @@ Take a look:
 ```
 qiime tools view core-metrics-results/unweighted-unifrac-vegetation-significance.qzv
 ```
+
+
+<center>
+<img src="beta_veg_boxplots.png" width=600 />
+</center>
 
 
 Are there any other categorical comparisons that are worth making?
@@ -405,7 +424,7 @@ qiime metadata distance-matrix \
 ```
 
 
-Then we can use a Mantel test to test for an association between this distance matrix and one of our metrics of beta diversity. We'll use just unweighted unifrac distance, but we can do this with any.
+Then we can use a Mantel test to test for an association between this distance matrix and one of our metrics of beta diversity. We'll use just unweighted unifrac distance, but we can do this with any metric.
 
 
 ```
@@ -426,7 +445,10 @@ View the resulting visualization:
 qiime tools view core-metrics-results/unweight_unifrac_elevation_mantel.qzv
 ```
 
-look into the `qiime diversity bioenv` - don't know what that does
+You'll see a warning that 27 IDs weren't shared between your distance matrices. This is because early on we filtered out some samples, then further filtered samples for sampling depth during the calculation of diversity metrics, whereas the metadata contains all samples. This mismatch is why we need to include the `--p-intersect-ids` flag here to tell the analysis to only include samples in both distance matrices that we input.
+
+
+We could alternately use the `qiime diversity bioenv` method in a similar way to test for relationships between continuous variables and beta diversity metrics, but we won't explore it here. You can run `qiime diversity mantel --help` for more info on this. 
 
 
 ### 4.3 Alpha rarefaction
@@ -453,11 +475,17 @@ qiime tools view alpha-rarefaction.qzv
 ```
 
 
-The top plot shows us how much diversity we detect at varying sequencing depths. If the plot has leveled off, we can be reasonably confident that we are accurately characterizing the diversity in our samples. If the plots do not level off, that suggests that further sequencing may be needed to detect additional features in the samples and accurately characterize diversity.
+The top plot shows us how much diversity we detect at varying sequencing depths. We should specifically check the value that we used for `--p-sampling-depth` when calculating diversity metrics looks good.
+
+If the plot has leveled off, we can be reasonably confident that we are accurately characterizing the diversity in our samples. If the plots do not level off, that suggests that further sequencing may be needed to detect additional features in the samples and accurately characterize diversity.
 
 How does this plot look to you? Do you think that the sequencing depth is adequate?
 
-The bottom plot shows the number of samples that remain in each category when grouping by metadata columns. This is important to look at because if the diversity metric in the top plot is calculated from very few samples at a given sampling depth, that estimate of diversity may be unreliable.
+The bottom plot shows the number of samples that remain in each category when grouping by metadata columns. This is important to look at because if the diversity metric in the top plot is calculated from very few samples at a given sampling depth, that estimate of diversity may be unreliable. In fact, if you look at Shannon diversity for vegetation, you can see that at the highest sequencing depth, the number of samples drops low and so does the Shannon index.
+
+<center>
+<img src="shannon_rarefac.png" width=600 />
+</center>
 
 
 
