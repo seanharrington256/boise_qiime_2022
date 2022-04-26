@@ -38,9 +38,15 @@
 </ul>
 <p><br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br> <br><br><br><br><br><br></p>
 <h2 id="introduction">1. Introduction</h2>
-<p>Qiime2 is a program for metabarcoding analysis. SOME MORE STUFF HERE!!!</p>
-<p>This tutorial is adapted from the following tutorials in the QIIME2 documentation: <a href="https://docs.qiime2.org/2022.2/tutorials/atacama-soils/">“Atacama soil microbiome” tutorial</a>, <a href="https://docs.qiime2.org/2022.2/tutorials/moving-pictures/">“Moving Pictures” tutorial</a>.</p>
-<p>describe the dataset, etc.</p>
+<p>QIIME2 is a pipeline for metabarcoding analysis described in <a href="https://www.nature.com/articles/s41587-019-0209-9">this paper</a>. It is a piece of software that wraps around several other programs via “plugins” in QIIME2 lingo. For example, in the error correction or “denoising” step, one option is to use the <code>dada2</code> plugin to run <a href="https://benjjneb.github.io/dada2/">DADA2</a>. DADA2 is incorporated into the QIIME2 pipeline, but is not developed or maintained by the same group that develops and maintains QIIME2. Users can develop their own plugins and contribute them to the QIIME2 pipeline to extend functionality as new methods are developed.</p>
+<p>The greatest advantage of QIIME2 is that it aggregates various tools into a single pipeline that uses a common grammar. This includes unifying data formatting so that users do not need to worry about complex file conversions to prep output from one program for input into another, which I personally find to be one of the most obnoxious hassles in bioinformatic analysis.</p>
+<p>Another advantage of QIIME2 is that the files track the provenance of the data–i.e., QIIME2 tracks exactly how the data has been processed at every step up to any given analysis. We will explore this further as we start looking at QIIME2 files.</p>
+<p>Note that hroughout this tutorial, I may simply refer to QIIME2 as QIIME, but in all cases, we are referring to QIIME2</p>
+<p>Today, we will use QIIME2 to explore soil microbiome data from the Atacama desert in Chile. The data are presented in <a href="https://journals.asm.org/doi/full/10.1128/mSystems.00195-16">this paper</a>.</p>
+<p>This tutorial is adapted from the following tutorials in the QIIME2 documentation: <a href="https://docs.qiime2.org/2022.2/tutorials/atacama-soils/">“Atacama soil microbiome” tutorial</a>, <a href="https://docs.qiime2.org/2022.2/tutorials/moving-pictures/">“Moving Pictures” tutorial</a>, <a href="https://docs.qiime2.org/2022.2/tutorials/feature-classifier/">Training feature classifiers</a>. The QIIME2 documentation is extensive and features several tutorials. More detail on all of the concepts that we will cover today can be found in this documentation.</p>
+<p>Blocks of code to be entered into your command line terminal will look like this:</p>
+<pre><code># This is a code block</code></pre>
+<p>The <code>#</code> denotes a comment in the bash language, and anything following that will not be interpreted by the system.</p>
 <p><br><br><br></p>
 <h2 id="installation-and-setup">2. Installation and setup</h2>
 <p>The QIIME2 software is built from a lot of different pieces and dependencies, and so installation is done using conda or virtual machines. I find conda installation to be the easiest (both here and for many other programs). conda allows users to create separate environments that programs are installed into, which allows users to have multiple versions of the same program all installed on the same machine, each within a different conda environment. This can be very useful with QIIME because some versions of QIIME have different features. Full details of QIIME2 installation options can be found <a href="https://docs.qiime2.org/2022.2/install/">here</a>, but we’ll stick with conda:</p>
@@ -108,6 +114,7 @@ qiime demux summarize \
   --i-data demux-subsample.qza \
   --o-visualization demux-subsample.qzv</code></pre>
 <h4 id="bring-the-qvz-into-qiime-view">Bring the qvz into qiime view</h4>
+<p>GO OVER what plugins are and the fact that a lot of this wraps other pieces of software (https://docs.qiime2.org/2022.2/citation/)</p>
 <p>We have a lot of samples that have fewer than 100 reads in them. This isn’t really enough reads for meaningful analysis, so let’s filter these out. You do not necessarily need to run through this step in other analyses. Think carefully about what thresholds you may want to use when filtering out any data.</p>
 <pre><code>qiime tools export \
   --input-path demux-subsample.qzv \
