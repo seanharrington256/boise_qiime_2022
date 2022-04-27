@@ -40,9 +40,6 @@ The greatest advantage of QIIME2 is that it aggregates various tools into a sing
 Another advantage of QIIME2 is that the files track the provenance of the data--i.e., QIIME2 tracks exactly how the data has been processed at every step up to any given analysis. We will explore this further as we start looking at QIIME2 files.
 
 
-Note that throughout this tutorial, I may simply refer to QIIME2 as QIIME, but in all cases, we are referring to QIIME2
-
-
 Today, we will use QIIME2 to explore soil microbiome data from the Atacama desert in Chile. The data are presented in [this paper](https://journals.asm.org/doi/full/10.1128/mSystems.00195-16).
 
 This tutorial is adapted from the following tutorials in the QIIME2 documentation: [“Atacama soil microbiome” tutorial](https://docs.qiime2.org/2022.2/tutorials/atacama-soils/), [“Moving Pictures” tutorial](https://docs.qiime2.org/2022.2/tutorials/moving-pictures/), [Training feature classifiers](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/). The QIIME2 documentation is extensive and features several tutorials. More detail on all of the concepts that we will cover today can be found in this documentation. 
@@ -69,7 +66,7 @@ I find conda installation to be the easiest (both here and for many other progra
 If you do not already have a conda install on your system, install miniconda following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 
-Then run the following to download the conda environment file and install QIIME from file into that environment at the same time. Note that most conda installs of other programs can be done from a remote source without first downloading a file.
+Then run the following to download the conda environment file and install QIIME2 from file into that environment at the same time. Note that most conda installs of other programs can be done from a remote source without first downloading a file.
 
 
 ```
@@ -97,7 +94,7 @@ You can always check what conda environments you have and which you are currentl
 
 
 
-Now that we have QIIME installed, let's download the data that we'll be working with. Create a new directory, move into that directory, and then download the data there. We'll work from within this directory for the duration of our QIIME analyses.
+Now that we have QIIME2 installed, let's download the data that we'll be working with. Create a new directory, move into that directory, and then download the data there. We'll work from within this directory for the duration of our QIIME2 analyses.
 
 ```
 mkdir qiime2-atacama-tutorial
@@ -499,9 +496,9 @@ The bottom plot shows the number of samples that remain in each category when gr
 ## 5. Taxonomic analysis
 
 
-Next up, we'll start to explore the taxonomic composition of our samples. We will start by training a taxonomic classifier. There are several existing, pre-trained classifiers that exist for QIIME, but the developers recommend training your own classifier, as they perform best when trained on your specific data.
+Next up, we'll start to explore the taxonomic composition of our samples. We will start by training a taxonomic classifier. We don't have time to get into how this works, but you can read all about it [here](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-018-0470-z). There are several existing, pre-trained classifiers that exist for QIIME2, but the developers recommend training your own classifier, as they perform best when tailored to your specific data.
 
-We'll follow the documentation [here](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/) to train our classifier. As stated in that documentation, we'll use the Greengenes 13_8 85% OTU data set -- **note that is not recommended for real data** -- we are using it here for the sake of time efficiency.
+We'll follow the documentation [here](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/) to train our classifier. We'll use the Greengenes 13_8 85% OTU dataset -- as they state in the documentation **this dataset is not recommended for real data** -- we are using it here for the sake of time efficiency.
 
 
 Start by creating a new directory, moving into it, and then downloading the data that we will use to train the classifier.
@@ -535,10 +532,7 @@ qiime tools import \
   --output-path ref-taxonomy.qza
 ```
 
-
-PUT IN MORE DETAIL HERE ABOUT THE CLASSIFIER:
-
-Next up, we'll extract the reads from the reference sequences to match our data:
+Next up, we'll extract the reads from the reference sequences to match our data. Here we use the same primers that were used to generate the data and set some min & max length parameters to exclude amplicons that are too short or long. We won't truncate the reads to a specific length because we have paired end data, and the merged reads end up as variable lengths.
 
 
 ```
@@ -561,7 +555,7 @@ qiime feature-classifier fit-classifier-naive-bayes \
   --o-classifier classifier.qza
 ```
 
-Now we can run the classifier on our data and then generate a visualization.
+This has trained the classifier on the reference data. Now we can run the classifier on our data to determine what taxa are present in our samples. Then we can make a visualization of this.
 
 
 ```
@@ -585,7 +579,7 @@ Let's take a look.
 qiime tools view taxonomy.qzv
 ```
 
-This isn't too informative or at all pretty to look at, so let's make some bar plots:
+This is useful information, but doesn't tell us much at a glance, so let's make some bar plots:
 
 ```
 qiime taxa barplot \
@@ -598,18 +592,29 @@ qiime taxa barplot \
 qiime tools view taxa-bar-plots.qzv
 ```
 
+We can now explore the taxonomic composition of the samples at various taxonomic levels and grouping by the different metadata categories.
 
-Set the `Taxonomic level` to *Level 2* and then `Sort Samples By` *vegetation*. Are there any noticeable differences in the phyla that are represented by samples from each of the vegetation categories?
+
+Set the `Taxonomic level` to *Level 2* (corresponding to phyla) and then `Sort Samples By` *vegetation*. Are there any noticeable differences in the phyla that are represented by samples from each of the vegetation categories?
+
+
+<center>
+<img src="taxa_barplot.png" width=600 />
+</center>
+
+
+
 
 
 <br><br><br>
 
 ## 6. Differential abundance testing with ANCOM
 
-We can also perform explicit tests for features that are differentially abundant across sample groups using [ANCOM](https://pubmed.ncbi.nlm.nih.gov/26028277/). 
+The final analysis that we'll run is to perform explicit tests for features that are differentially abundant across sample groups using [ANCOM](https://pubmed.ncbi.nlm.nih.gov/26028277/). ANCOM is a method specifically designed top test for the differential abundance of taxa in microbiome data.
 
 
-To do this, we need to use `add-pseudocount` to generate a `FeatureTable[Composition]` QIIME artifact. This is necessary because ANCOM cannot handle frequencies of zero, and so these values must be imputed prior to analysis with ANCOM.
+To do this, we need to use `add-pseudocount` to generate a `FeatureTable[Composition]` QIIME artifact. In our current feature table, many sequences/taxa will have frequencies of zero in multiple samples. However, ANCOM cannot handle frequencies of zero, and so `add-pseudocount` is used to impute values and make the data suitable for ANCOM analysis.
+
 
 ```
 qiime composition add-pseudocount \
@@ -633,10 +638,9 @@ Visualize this:
 qiime tools view ancom-vegetation.qzv
 ```
 
-NEED a lot more interpretation here 
+This shows us individual features that are differentially abundant across vegetation categories. We may instead or additionally be interested in how certain taxa at a given taxonomic level differ across groups.
 
-We can also run this at the genus level by collapsing down the taxonomy THIS explanation sucks
-
+Let's collapse our features into sets of taxa, starting with the genus level
 
 ``` 
 qiime taxa collapse \
@@ -689,11 +693,8 @@ qiime tools view l2-ancom-vegetation.qzv
 ```
 
 
-What phyla differ among the vegetated and non-vegetated sites.
+What phyla differ among the vegetated and non-vegetated sites?
 
 
-**Stuff to look up later**
 
-
-May want to add in Gneiss - at least reference it
-
+QIIME2 also includes another method for differential abundance analysis, called Gneiss. We won't explore it today, but it is documented [here](https://docs.qiime2.org/2022.2/tutorials/gneiss/).
