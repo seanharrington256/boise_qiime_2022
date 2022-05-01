@@ -19,7 +19,7 @@ date: April 30, 2022
 	- [4.3 Alpha rarefaction](#alpha-rarefaction)
 - [5. Taxonomic analysis](#taxonomic-analysis)
 - [6. Differential abundance testing with ANCOM](#differential-abundance-testing-with-ancom)
-
+- [7. Some other useful approaches](#some-other-useful-approaches)
 
 
 
@@ -27,7 +27,7 @@ date: April 30, 2022
 <br><br><br><br><br><br>
 <br><br><br><br><br><br>
 <center>
-<img src="qiime2.svg" width=550 />
+<img src="images/qiime2.svg" width=550 />
 </center>
 <br><br><br>
 
@@ -182,7 +182,7 @@ Before we go any further, let's do a quick exploration of a .qza file. We can us
 You can also click on the "provenance" tab to see what manipulations have been done to your data. You should see something like this:
 
 <center>
-<img src="provenance_pic.png" width=600 />
+<img src="images/provenance_pic.png" width=600 />
 </center>
 
 
@@ -195,11 +195,11 @@ qiime tools view demux-subsample.qzv
 The `Overview` tab shows some general stats on how many reads we have per sample. From looking at the histograms, we see that a lot of samples have very few reads. If we scroll down to look at the table, we see that we have a lot of samples that have fewer than 100 reads in them. 
 
 <center>
-<img src="reads_hist.png" width=600 />
+<img src="images/reads_hist.png" width=600 />
 </center>
 
 <center>
-<img src="low_reads_tab.png" width=550 />
+<img src="images/low_reads_tab.png" width=550 />
 </center>
 
 
@@ -230,7 +230,7 @@ qiime tools view demux-subsample.qzv
 You should see something like this:
 
 <center>
-<img src="base_qual.png" width=600 />
+<img src="images/base_qual.png" width=600 />
 </center>
 
 
@@ -382,7 +382,7 @@ qiime tools view core-metrics-results/unweighted-unifrac-vegetation-significance
 
 
 <center>
-<img src="beta_veg_boxplots.png" width=600 />
+<img src="images/beta_veg_boxplots.png" width=600 />
 </center>
 
 
@@ -486,7 +486,7 @@ How does this plot look to you? Do you think that the sequencing depth is adequa
 The bottom plot shows the number of samples that remain in each category when grouping by metadata columns. This is important to look at because if the diversity metric in the top plot is calculated from very few samples at a given sampling depth, that estimate of diversity may be unreliable. In fact, if you look at Shannon diversity for vegetation, you can see that at the highest sequencing depth, the number of samples drops low and so does the Shannon index.
 
 <center>
-<img src="shannon_rarefac.png" width=600 />
+<img src="images/shannon_rarefac.png" width=600 />
 </center>
 
 
@@ -599,7 +599,7 @@ Set the `Taxonomic level` to *Level 2* (corresponding to phyla) and then `Sort S
 
 
 <center>
-<img src="taxa_barplot.png" width=600 />
+<img src="images/taxa_barplot.png" width=600 />
 </center>
 
 
@@ -698,3 +698,33 @@ What phyla differ among the vegetated and non-vegetated sites?
 
 
 QIIME2 also includes another method for differential abundance analysis, called Gneiss. We won't explore it today, but it is documented [here](https://docs.qiime2.org/2022.2/tutorials/gneiss/).
+
+
+<br><br><br>
+
+## 7. Some other useful approaches
+
+QIIME2 is only one pipeline for microbiome analysis. You could alternately do all of these steps using command line tools without using QIIME2 at all or even in R. R can make some really fancy figures, so even if you do most of your data processing and analysis in QIIME2, you may want to export your data from QIIME2 ([see here for documentation](https://docs.qiime2.org/2022.2/tutorials/exporting/)) to run some analyses and make nice graphics for publication.
+
+
+Here are a few tutorials for microbiome analysis in R:
+
+- [Workflow for Microbiome Data Analysis: from raw reads to community analyses]( https://bioconductor.org/help/course-materials/2017/BioC2017/Day1/Workshops/Microbiome/MicrobiomeWorkflowII.html)
+
+- [Introduction to the Statistical Analysis of Microbiome Data in R](https://www.nicholas-ollberding.com/post/introduction-to-the-statistical-analysis-of-microbiome-data-in-r/)
+
+- [How to give life to your microbiome data](https://towardsdatascience.com/how-to-give-life-to-your-microbiome-data-using-plotly-r-1892281183cf)
+
+- [Microbiome analysis in R November 2021](https://uw-madison-microbiome-hub.github.io/Microbiome_analysis_in-_R/)
+
+
+Full disclosure: I haven't run through these and can't vouch for them or that all code is current and runs, but they look nice.
+
+
+
+
+
+
+
+
+<br><br><br>
