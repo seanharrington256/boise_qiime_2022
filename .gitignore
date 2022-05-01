@@ -1,0 +1,4 @@
+# ignore images and css - the html is standalone
+*svg 
+*png 
+*css
