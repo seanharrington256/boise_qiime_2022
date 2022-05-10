@@ -46,7 +46,7 @@ This tutorial is adapted from the following tutorials in the QIIME2 documentatio
 
 Blocks of code to be entered into your command line terminal will look like this:
 
-```
+```bash
 # This is a code block
 ```
 
@@ -69,7 +69,7 @@ If you do not already have a conda install on your system, install miniconda fol
 Then run the following to download the conda environment file and install QIIME2 from file into that environment at the same time. Note that most conda installs of other programs can be done from a remote source without first downloading a file.
 
 
-```
+```bash
 conda install wget
 wget https://data.qiime2.org/distro/core/qiime2-2022.2-py38-osx-conda.yml
 conda env create -n qiime2-2022.2 --file qiime2-2022.2-py38-osx-conda.yml
@@ -80,7 +80,7 @@ To use QIIME2 now or at any point in the future, you will need to activate the `
 
 Activate the environment and test the install:
 
-```
+```bash
 conda activate qiime2-2022.2
 qiime --help
 ```
@@ -96,7 +96,7 @@ You can always check what conda environments you have and which you are currentl
 
 Now that we have QIIME2 installed, let's download the data that we'll be working with. Create a new directory, move into that directory, and then download the data there. We'll work from within this directory for the duration of our QIIME2 analyses.
 
-```
+```bash
 mkdir qiime2-atacama-tutorial
 cd qiime2-atacama-tutorial
 
@@ -133,7 +133,7 @@ Take a look at the sample metadata in the `sample_metadata.tsv` file to get fami
 Now we can import the data and prepare it for analysis in QIIME2. As touched on above, QIIME2 puts things into its own file format, and so the first step is to read the raw data into QIIME2 format.
 
 
-```
+```bash
 qiime tools import \
    --type EMPPairedEndSequences \
    --input-path emp-paired-end-sequences \
@@ -149,7 +149,7 @@ This creates a QIIME2 file called an artifact. QIIME2 uses two file formats, "QI
 
 We now need to demultiplex the sequences, which sorts the reads into samples based on barcodes added in the library preparation.
 
-```
+```bash
 qiime demux emp-paired \
   --m-barcodes-file sample-metadata.tsv \
   --m-barcodes-column barcode-sequence \
@@ -165,7 +165,7 @@ Note that most options to QIIME2 commands share a general structure. They all st
 
 To make things run faster, we'll subsample only 30% of the reads. **This is not a general step for most pipelines**. You will typically want to use all of your data unless you have a specific reason for subsampling.
 
-```
+```bash
 qiime demux subsample-paired \
   --i-sequences demux-full.qza \
   --p-fraction 0.3 \
@@ -188,7 +188,7 @@ You can also click on the "provenance" tab to see what manipulations have been d
 
 This tells us important information, but isn't very interesting from a scientific perspective of trying to learn about the data and make inferences. Visualiztion (qzv) files are much more intersting for these purposes. We can use a terminal command to view visualization files:
 
-```
+```bash
 qiime tools view demux-subsample.qzv
 ```
 
@@ -205,7 +205,7 @@ The `Overview` tab shows some general stats on how many reads we have per sample
 
 This isn't enough reads for meaningful analysis, so we'll filter these out in the next step. You do not necessarily need to run through this step in other analyses. Think carefully about what thresholds you may want to use when filtering out any data.
 
-```
+```bash
 qiime tools export \
   --input-path demux-subsample.qzv \
   --output-path ./demux-subsample/
@@ -223,7 +223,7 @@ qiime demux filter-samples \
 
 Our next step is to "denoise", or error correct, the data. This is an important step in the analysis of metabarcoding data because the units of analysis are unique sequences, presumed to be from unique organisms. However, all sequencers encounter sequencing errors, which produce sequences that are slightly different from the true sequence. We will use DADA2 (via the dada2 plugin) to error correct our data--this is a complex process, and you can read more about it [here](https://www.nature.com/articles/nmeth.3869)--this is not the only option for error correction in QIIME2. This step will also include some trimming of our reads and will merge the forward and reverse reads. To determine some of our trimming paramters, let's go back to our demultiplexed visualization and look in the `Interactive Quality Plot` tab
 
-```
+```bash
 qiime tools view demux-subsample.qzv
 ```
 
@@ -237,7 +237,7 @@ You should see something like this:
 We have 150 bp paired-end reads, and quality is reasonably high throughout, but we can see that the first ~13 bp of both forward and reverse reads is a little low, so we'll trim those out. We'll also truncate reads in both directions to 150 bp, since none should be longer than this. Note that we have set these the same for forward and reverse reads, but that is not necessary.
 
 
-```
+```bash
 qiime dada2 denoise-paired \
   --i-demultiplexed-seqs demux.qza \
   --p-trim-left-f 13 \
@@ -251,7 +251,7 @@ qiime dada2 denoise-paired \
 
 Let's generate a few summaries of this ouput:
 
-```
+```bash
 qiime feature-table summarize \
   --i-table table.qza \
   --o-visualization table.qzv \
@@ -281,7 +281,7 @@ Now that we have the data fully read in and processed, we can start to do some a
 
 Many of these metrics include phylogenetic distance in their calculation, and to do that, we need a tree. We'll start by making one. We'll use the `phylogeny` plugin to use the [MAFFT](https://mafft.cbrc.jp/alignment/software/) program for sequence alignment, followed by phylogenetic analysis in the program [FastTree](http://www.microbesonline.org/fasttree/). As for many of the methods in QIIME2, these are external programs that are being called by the QIIME2 pipeline. There are multiple other options that you can explore using `--help`.
 
-```
+```bash
 qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences rep-seqs.qza \
   --o-alignment aligned-rep-seqs.qza \
@@ -295,7 +295,7 @@ Next, we can start to calculate some diversity metrics. We have to specify a min
 
 This is necessary because using different numbers of features across samples can bias estimates of diversity. There is no easy rule for selecting this threshold, other than that we want to try to select a threshold that maximizes the number of features without dropping out too many samples. Let's look at the *Interactive Sample Detail* section of `table.qzv` to help us figure out what threshold to use.
 
-```
+```bash
 qiime tools view table.qzv
 ```
 
@@ -308,7 +308,7 @@ When selecting this threshold, keep in mind that we also want to keep an eye on 
 Once we've selected a good sampling depth, we can calculate our diversity metrics:
 
 
-```
+```bash
 qiime diversity core-metrics-phylogenetic \
   --i-phylogeny rooted-tree.qza \
   --i-table table.qza \
@@ -317,11 +317,13 @@ qiime diversity core-metrics-phylogenetic \
   --output-dir core-metrics-results
 ```
 
+**Note that the 733 I used here may not be exactly what you want to use.** When we subsampled reads at the beginning to reduce computation time, we did so randomly, so everyone will have slightly different datasets containing different reads. This will affect any specific values used throughout this tutorial.
+
 This generates a lot of output that is worth looking through, take a look at all of the artifacts and visualizations that were created: `ls core-metrics-results`.
 
 For each of the beta diversity metrics, a principal coordinates analysis (PCoA) plot was generated using Emperor. Let's take a look at one of them:
 
-```
+```bash
 qiime tools view core-metrics-results/bray_curtis_emperor.qzv
 ```
 
@@ -338,7 +340,7 @@ Now that we have computed the diversity metrics and done some qualitative explor
 Let's start with categorical tests using the evenness and Faith Phylogenetic Diversity metrics. 
 
 
-```
+```bash
 qiime diversity alpha-group-significance \
   --i-alpha-diversity core-metrics-results/evenness_vector.qza \
   --m-metadata-file sample-metadata.tsv \
@@ -353,7 +355,7 @@ qiime diversity alpha-group-significance \
 
 Take a look at these results:
 
-```
+```bash
 qiime tools view core-metrics-results/evenness-group-significance.qzv
 
 qiime tools view core-metrics-results/faith-pd-group-significance.qzv
@@ -365,7 +367,7 @@ What associations are statistically significant?
 
 Now let's look at how beta diversity composition varies across categorical variables using PERMANOVA. This tests if distances between samples within a group are more similar to each other than to samples from other groups. Because it uses permutation to assess significance, this command can be slow, and so we will only run it on the vegetation column of our metadata right now. The addition of the `--p-pairwise` option will perform pairwise tests to determine which groups are significantly different from each other--note that this is redundant here because we only have two groups for vegetation.
 
-```
+```bash
 qiime diversity beta-group-significance \
   --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
   --m-metadata-file sample-metadata.tsv \
@@ -376,7 +378,7 @@ qiime diversity beta-group-significance \
 
 Take a look:
 
-```
+```bash
 qiime tools view core-metrics-results/unweighted-unifrac-vegetation-significance.qzv
 ```
 
@@ -394,7 +396,7 @@ Are there any other categorical comparisons that are worth making?
 
 We can also make correlations between diversity and continuous variables from the metadata. As above, we'll start with alpha diversity:
 
-```
+```bash
 qiime diversity alpha-correlation \
 	--i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
 	--m-metadata-file sample-metadata.tsv \
@@ -405,7 +407,7 @@ qiime diversity alpha-correlation \
 
 View it:
 
-```
+```bash
 qiime tools view core-metrics-results/faith-pd-correlation.qzv
 ```
 
@@ -417,7 +419,7 @@ Let's now look for significant correlations using beta diversity.
 To do this, we need to first calculate a distance matrix from the column of interest from the metadata. Here we'll use just elevation, but you are free to explore other variables as well. 
 
 
-```
+```bash
 qiime metadata distance-matrix \
 	--m-metadata-file sample-metadata.tsv \
 	--m-metadata-column elevation \
@@ -428,7 +430,7 @@ qiime metadata distance-matrix \
 Then we can use a Mantel test to test for an association between this distance matrix and one of our metrics of beta diversity. We'll use just unweighted unifrac distance, but we can do this with any metric.
 
 
-```
+```bash
 qiime diversity mantel \
 	--i-dm1 core-metrics-results/elevation-dist-mat.qza \
 	--i-dm2 core-metrics-results/unweighted_unifrac_distance_matrix.qza \
@@ -442,7 +444,7 @@ qiime diversity mantel \
 View the resulting visualization:
 
 
-```
+```bash
 qiime tools view core-metrics-results/unweight_unifrac_elevation_mantel.qzv
 ```
 
@@ -459,7 +461,7 @@ Alpha rarefaction plotting will compute alpha diversity at multiple sampling dep
 
 
 
-```
+```bash
 qiime diversity alpha-rarefaction \
   --i-table table.qza \
   --i-phylogeny rooted-tree.qza \
@@ -472,7 +474,7 @@ qiime diversity alpha-rarefaction \
 The parameter `--p-max-depth` should be chosen from the information in `table.qzv` that we generated previously. Using roughly the median frequency is generally recommended, but you may want to increase the value if your rarefaction plot does not level out or decrease it if you are losing many of your samples at this depth. We've chosen the median above, let's see how it looks:
 
 
-```
+```bash
 qiime tools view alpha-rarefaction.qzv
 ```
 
@@ -503,7 +505,7 @@ We'll follow the documentation [here](https://docs.qiime2.org/2022.2/tutorials/f
 
 Start by creating a new directory, moving into it, and then downloading the data that we will use to train the classifier.
 
-```
+```bash
 mkdir training-feature-classifiers
 cd training-feature-classifiers
 wget \
@@ -511,7 +513,8 @@ wget \
   "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otus.fasta"
 
 wget \
-  -O "85_otu_taxonomy.txt" \  "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otu_taxonomy.txt"
+  -O "85_otu_taxonomy.txt" \
+  "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otu_taxonomy.txt"
 ```
 
 If that all ran successfully, you should now have three files in your current directory, a fasta, txt, and qza file.
@@ -519,7 +522,7 @@ If that all ran successfully, you should now have three files in your current di
 
 Then we need to import these data as QIIME artifact files.
 
-```
+```bash
 qiime tools import \
   --type 'FeatureData[Sequence]' \
   --input-path 85_otus.fasta \
@@ -535,7 +538,7 @@ qiime tools import \
 Next up, we'll extract the reads from the reference sequences to match our data. Here we use the same primers that were used to generate the data and set some min & max length parameters to exclude amplicons that are too short or long. We won't truncate the reads to a specific length because we have paired end data, and the merged reads end up as variable lengths.
 
 
-```
+```bash
 qiime feature-classifier extract-reads \
   --i-sequences 85_otus.qza \
   --p-f-primer GTGCCAGCMGCCGCGGTAA \
@@ -548,7 +551,7 @@ qiime feature-classifier extract-reads \
 
 Then we can run the Naive Bayes classifier.
 
-```
+```bash
 qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-reads ref-seqs.qza \
   --i-reference-taxonomy ref-taxonomy.qza \
@@ -558,7 +561,7 @@ qiime feature-classifier fit-classifier-naive-bayes \
 This has trained the classifier on the reference data. Now we can run the classifier on our data to determine what taxa are present in our samples. Then we can make a visualization of this.
 
 
-```
+```bash
 cd ..  # We first need to move up one level to get out of the classifier directory
 
 qiime feature-classifier classify-sklearn \
@@ -575,13 +578,13 @@ qiime metadata tabulate \
 Let's take a look.
 
 
-```
+```bash
 qiime tools view taxonomy.qzv
 ```
 
 This is useful information, but doesn't tell us much at a glance, so let's make some bar plots:
 
-```
+```bash
 qiime taxa barplot \
   --i-table table.qza \
   --i-taxonomy taxonomy.qza \
@@ -616,7 +619,7 @@ The final analysis that we'll run is to perform explicit tests for features that
 To do this, we need to use `add-pseudocount` to generate a `FeatureTable[Composition]` QIIME artifact. In our current feature table, many sequences/taxa will have frequencies of zero in multiple samples. However, ANCOM cannot handle frequencies of zero, and so `add-pseudocount` is used to impute values and make the data suitable for ANCOM analysis.
 
 
-```
+```bash
 qiime composition add-pseudocount \
   --i-table table.qza \
   --o-composition-table comp-table.qza
@@ -624,7 +627,7 @@ qiime composition add-pseudocount \
 
 Then we'll run ANCOM on the `vegetation` column to see if we have any significant differential abundance across vegetation categories.
 
-```
+```bash
 qiime composition ancom \
   --i-table comp-table.qza \
   --m-metadata-file sample-metadata.tsv \
@@ -634,7 +637,7 @@ qiime composition ancom \
 
 Visualize this:
 
-```
+```bash
 qiime tools view ancom-vegetation.qzv
 ```
 
@@ -642,7 +645,7 @@ This shows us individual features that are differentially abundant across vegeta
 
 Let's collapse our features into sets of taxa, starting with the genus level
 
-``` 
+```bash
 qiime taxa collapse \
   --i-table table.qza \
   --i-taxonomy taxonomy.qza \
@@ -663,14 +666,14 @@ qiime composition ancom \
 Take a look.
 
 
-```
+```bash
 qiime tools view l6-ancom-vegetation.qzv
 ```
 
 
 We can also do the same for phyla:
 
-``` 
+```bash
 qiime taxa collapse \
   --i-table table.qza \
   --i-taxonomy taxonomy.qza \
